@@ -1,0 +1,98 @@
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+                body { margin: 0; padding: 20px; font-family: -apple-system; font-size: 17px; }
+                [contenteditable] { outline: none; min-height: 400px; }
+                
+                /* 图片选中的样式 */
+                img { max-width: 100%; height: auto; transition: box-shadow 0.2s; position: relative; }
+                .selected-img { box-shadow: 0 0 0 2px #007AFF; }
+                
+                /* 缩放手柄样式 */
+                .resizer-handle {
+                    width: 20px; height: 20px;
+                    background: #007AFF;
+                    border: 2px solid white;
+                    border-radius: 10px;
+                    position: absolute;
+                    display: none; /* 默认隐藏 */
+                    z-index: 100;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="editor" contenteditable="true">\(initialHTML)</div>
+            
+            <!-- 缩放手柄 HTML -->
+            <div id="resizer" class="resizer-handle"></div>
+
+            <script>
+                var editor = document.getElementById('editor');
+                var resizer = document.getElementById('resizer');
+                var currentImg = nil;
+
+                // 监听点击事件，处理图片选中
+                editor.addEventListener('click', function(e) {
+                    if (e.target.tagName === 'IMG') {
+                        selectImage(e.target);
+                    } else {
+                        hideResizer();
+                    }
+                });
+
+                function selectImage(img) {
+                    currentImg = img;
+                    // 给图片加蓝框
+                    document.querySelectorAll('img').forEach(i => i.classList.remove('selected-img'));
+                    img.classList.add('selected-img');
+                    
+                    // 显示并定位手柄在图片右下角
+                    updateHandlePosition();
+                    resizer.style.display = 'block';
+                }
+
+                function hideResizer() {
+                    if(currentImg) currentImg.classList.remove('selected-img');
+                    currentImg = null;
+                    resizer.style.display = 'none';
+                }
+
+                function updateHandlePosition() {
+                    if (!currentImg) return;
+                    var rect = currentImg.getBoundingClientRect();
+                    resizer.style.top = (rect.bottom + window.scrollY - 10) + 'px';
+                    resizer.style.left = (rect.right + window.scrollX - 10) + 'px';
+                }
+
+                // 手柄拖动逻辑
+                resizer.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    var startX = e.touches[0].clientX;
+                    var startWidth = currentImg.clientWidth;
+
+                    function onTouchMove(e) {
+                        var diff = e.touches[0].clientX - startX;
+                        var newWidth = startWidth + diff;
+                        if (newWidth > 50) { // 最小宽度限制
+                            currentImg.style.width = newWidth + 'px';
+                            currentImg.style.height = 'auto'; // 保持比例
+                            updateHandlePosition();
+                        }
+                    }
+
+                    function onTouchEnd() {
+                        window.removeEventListener('touchmove', onTouchMove);
+                        window.removeEventListener('touchend', onTouchEnd);
+                    }
+
+                    window.addEventListener('touchmove', onTouchMove);
+                    window.addEventListener('touchend', onTouchEnd);
+                });
+
+                // 页面滚动时更新手柄位置
+                window.addEventListener('scroll', updateHandlePosition);
+            </script>
+        </body>
+        </html>
